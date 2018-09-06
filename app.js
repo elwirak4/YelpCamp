@@ -1,45 +1,18 @@
 var express = require("express"),
     app = express(),
     bodyParser = require("body-parser"),
-    mongoose = require("mongoose")
+    mongoose = require("mongoose"),
+    Campground = require("./models/campground"),
+    Comment     = require("./models/comment"),
+    seedDB = require("./seeds")
 
-mongoose.connect("mongodb://localhost/yelp_camp");
+
+mongoose.connect("mongodb://localhost/yelp_camp", { useNewUrlParser: true });
 app.use(bodyParser.urlencoded({extended: true}));
-
 app.set("view engine", "ejs");
+app.use(express.static(__dirname + "/public"));
 
-//Schema Setup
-var campgroundSchema = new mongoose.Schema({
-  name: String,
-  image: String,
-  description: String
-});
-
-var Campground = mongoose.model("Campground", campgroundSchema);
-
-//Campground.create(
-//  {
-//    name: "Salmon Creek",
-//    image: "https://farm3.staticflickr.com/2116/2164766085_0229ac3f08.jpg",
-//    description: "This is a huge granite hill,  no bathrooms. No water.Beautifull granite!"
-//  }, function(err,campground){
-//    if(err){
-//    console.log(campground);
-//    }
-//  });
-
-var campgrounds = [
-  {name: "Salmon Creek", image : "https://farm3.staticflickr.com/2116/2164766085_0229ac3f08.jpg"},
-  {name: "Salmon Breek", image : "https://farm3.staticflickr.com/2116/2164766085_0229ac3f08.jpg"},
-  {name: "Granite Hills", image : "https://farm4.staticflickr.com/3881/14146164489_0cb49d2904.jpg"},
-  {name: "Granite Hill", image : "https://farm4.staticflickr.com/3881/14146164489_0cb49d2904.jpg"},
-  {name: "Mountain Boat's Rest", image : "https://farm3.staticflickr.com/2033/1528459592_5fa348d53f.jpg"},
-  {name: "Mountain Goat's Rest", image : "https://farm3.staticflickr.com/2033/1528459592_5fa348d53f.jpg"},
-  {name: "Salmon Wreek", image : "https://farm3.staticflickr.com/2116/2164766085_0229ac3f08.jpg"},
-  {name: "Granite Hilde", image : "https://farm4.staticflickr.com/3881/14146164489_0cb49d2904.jpg"},
-  {name: "Mountain Goat's West", image : "https://farm3.staticflickr.com/2033/1528459592_5fa348d53f.jpg"}
-];
-
+seedDB();
 
 app.get("/", function(req, res){
   res.render("landing");
@@ -52,10 +25,9 @@ app.get("/campgrounds", function(req, res){
     if(err){
       console.log(err);
     }else{
-      res.render("index", {campgrounds: allCampgrounds});
+      res.render("campgrounds/index", {campgrounds: allCampgrounds});
     }
   });
-  //res.render("campgrounds", {campgrounds: campgrounds});
 });
 
 //CREATE - add new campgrounds to DB
@@ -78,21 +50,57 @@ app.post("/campgrounds", function(req, res){
 
 //NEW - show form to create new campground
 app.get("/campgrounds/new", function(req,  res){
-  res.render("new.ejs");
+  res.render("campgrounds/new");
 })
 
 //SHOW - shows more info about one campground
 app.get("/campgrounds/:id", function(req, res){
   //find the campground with provided ID
-  Campground.findById(req.params.id,  function(err, foundCampground){
+  Campground.findById(req.params.id).populate("comments").exec(function(err, foundCampground){
     if(err){
       console.log(err);
     }else{
-      res.render("show", {campground: foundCampground});
+      console.log(foundCampground);
+      res.render("campgrounds/show", {campground: foundCampground});
     }
   });
-})
+});
+
+//COMMENTS ROUTES
+
+app.get("/campgrounds/:id/comments/new",function(req, res){
+  //find campground by id
+  Campground.findById(req.params.id, function(err, campground){
+    if(err){
+      console.log(err);
+    }else{
+      res.render("comment/new", {campground: campground});
+    }
+  });
+});
+
+app.post("/campgrounds/:id/comments", function(req, res){
+  //lookup campground using id
+  Campground.findById(req.params.id, function(err, campground){
+    if(err){
+      console.log(err);
+    }else{
+        Comment.create(req.body.comment, function(err, comment){
+          if(err){
+            console.log(err);
+          }else{
+            campground.comments.push(comment);
+            campground.save();
+            res.redirect("/campgrounds/" + campground._id);
+          }
+        });
+    }
+  });
+  //create new comment
+  //connect new comment to campground
+  //redirect campground show page
+});
 
 app.listen(3000, function(){
-    console.log("Movie App has started on port 3000!");
+    console.log("Server has started on port 3000!");
 });

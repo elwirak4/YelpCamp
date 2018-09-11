@@ -12,14 +12,14 @@ router.get("/new", isLoggedIn, function(req, res){
     if(err){
       console.log(err);
     }else{
-      res.render("comment/new", {campground: campground});
+      res.render("comments/new", {campground: campground});
     }
   });
 });
 
 //Comments Create
 
-router.post("/",isLoggedIn, function(req, res){
+router.post("/", isLoggedIn, function(req, res){
   //lookup campground using id
   Campground.findById(req.params.id, function(err, campground){
     if(err){
@@ -29,8 +29,14 @@ router.post("/",isLoggedIn, function(req, res){
           if(err){
             console.log(err);
           }else{
+            //add usernam and id to comment
+            comment.author.id = req.user._id;
+            comment.author.username = req.user.username;
+            //save comment
+            comment.save();
             campground.comments.push(comment);
             campground.save();
+            console.log(comment);
             res.redirect("/campgrounds/" + campground._id);
           }
         });

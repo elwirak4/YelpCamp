@@ -4,6 +4,7 @@ var express = require("express"),
     mongoose = require("mongoose"),
     passport = require("passport"),
     LocalStrategy = require("passport-local"),
+    methodOverride = require("method-override"),
     Campground = require("./models/campground"),
     Comment     = require("./models/comment"),
     User = require("./models/user"),
@@ -11,13 +12,14 @@ var express = require("express"),
 
 //requring routes
 var commentRoutes = require("./routes/comments"),
-    campgroundsRoutes = require("./routes/campgrounds"),
+    campgroundRoutes = require("./routes/campgrounds"),
     indexRoutes = require("./routes/index")
 
 mongoose.connect("mongodb://localhost/yelp_camp", { useNewUrlParser: true });
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
+app.use(methodOverride("_method"));
 //seed the database
 //seedDB();
 
@@ -39,10 +41,10 @@ app.use(function(req, res, next){
 	});
 
 app.use("/", indexRoutes);
-app.use("/campgrounds", campgroundsRoutes);
+app.use("/campgrounds", campgroundRoutes);
 app.use("/campgrounds/:id/comments", commentRoutes);
 
 
-app.listen(8000, function(){
-    console.log("Server has started on port 8000!");
+app.listen(3000, function(){
+    console.log("Server has started on port 3000!");
 });
